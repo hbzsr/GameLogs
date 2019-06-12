@@ -31,14 +31,15 @@ object GameKPI {
     //获取es数据,返回的类型中
     // 第一个参数：String是对应"_id"字段值
     //第二个参数：Map表示的是 _id对应的数据
-    val queryRDD: RDD[(String, collection.Map[String, AnyRef])] =
-    sc.esRDD("gamelogs", query)
+    val queryRDD: RDD[(String, collection.Map[String, AnyRef])] = sc.esRDD("gamelogs", query)
+    println("——————————————————————————————" + queryRDD.count())
     //将_id过滤掉
     // map中的第一个参数：String是字段名称 ， 第二个参数AnyRef是字段值
     val filterRDD: RDD[collection.Map[String, AnyRef]] = queryRDD.map(_._2).filter(line => {
       val current_time = line.getOrElse("current_time", -1).toString
       current_time.substring(0, 1).equals("2")
     })
+    println("-->>>>>>>>>-----" + filterRDD.count())
     //切分数据
     val spliteRDD: RDD[Array[String]] = filterRDD.map(line => {
       val et = line.getOrElse("event_type", "-1").toString
@@ -47,7 +48,7 @@ object GameKPI {
       val user = line.getOrElse("user", "").toString
       Array(et, time, user)
     })
-
+    println("*******>>>>>******" + spliteRDD.count())
     // 很多指标的统计都需要发过滤，可以将过滤的逻辑封装为工具类，减少代码冗余
     // SimpleDateFormat是线程不安全的，可以加锁，也可以用另外一个线程安全的对象：FastDateFormat
     // 最好不要在算子内部去new一个对象，会占用很多内存资源
@@ -86,7 +87,7 @@ object GameKPI {
     }).map(_ (2)).distinct()
     val keep2Day = dayNewUsers.intersection(day2Users)
 
-    println("新增用户" + DNU, "日活跃用户：" + DAU, "次日留存率 ： " + keep2Day)
+    println("新增用户" + DNU.count(), "日活跃用户：" + DAU, "次日留存 ： " + keep2Day.count())
 
     sc.stop
 
